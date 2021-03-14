@@ -7,6 +7,7 @@ import javax.imageio.ImageIO
 import java.awt.image.BufferedImage
 import com.google.zxing.NotFoundException
 import com.google.zxing.Result
+import fr.isen.m1.cyber.r2ddoc.DataValueIso20022
 import fr.isen.m1.cyber.r2ddoc.Version2DDoc
 import org.apache.commons.codec.binary.Base32
 import java.io.File
@@ -22,7 +23,7 @@ fun decodeQRCode(qrCodeImage: String): String? {
     val result: Result? = MultiFormatReader().decode(bitmap)
     return result?.text
 }
-
+// https://github.com/ajalt/mordant
 //TMP function
 fun parseHeader(header: String, version: String) {
     val versionSupported = Version2DDoc.isSupportedVersion(version)
@@ -39,6 +40,7 @@ fun parseHeader(header: String, version: String) {
     }
 }
 
+
 fun main(args: Array<String>) {
     try {
         val result = decodeQRCode("./samples/test2.png")
@@ -49,9 +51,30 @@ fun main(args: Array<String>) {
                 println("version: $version2dDoc")
                 println("header: $header")
                 parseHeader(header, version)
-                val rest = result.drop(version2dDoc.headerLength).split(31.toChar()) // ASCII 31 - <US> separator
+                val rest = result.drop(version2dDoc.headerLength).split(31.toChar()) // ASCII 31 - <US> Unit Separator
                 val data = rest[0]
                 println("data: $data")
+                val dataFields = data.split(29.toChar()) // ASCII 29 - <GS> Group Separator
+                println("fields: $dataFields")
+                dataFields.forEach { field ->
+                    if (field.length >= 2) {
+                        val id = field.substring(0, 2)
+                        var label = ""
+                        DataValueIso20022.getValue(id)?.let { dataValue ->
+                            label = dataValue.label
+                        }
+                        //println("found: ${label.substring(0, dataValue.maxSize)}")
+                        // si label.size > a son max, on resplit en enlevant la partie de ce field en utilisant
+                        var value = field.substring(2, field.length)
+                        if (value == "") {
+                            value = "vide"
+                        }
+                        println("$label $value")
+                    } else {
+                        println("error: $field")
+                    }
+                }
+
                 val signature = when(rest.size) {
                     2 -> rest[1]
                     else -> ""

@@ -41,7 +41,7 @@ fun parseHeader(header: String, version: String) {
 
 fun main(args: Array<String>) {
     try {
-        val result = decodeQRCode("./samples/edf.png")
+        val result = decodeQRCode("./samples/test2.png")
         result?.substring(2, 4)?.let { version ->
             Version2DDoc.isSupportedVersion(version)?.let { version2dDoc ->
                 val header = result.take(version2dDoc.headerLength)
@@ -49,7 +49,7 @@ fun main(args: Array<String>) {
                 println("version: $version2dDoc")
                 println("header: $header")
                 parseHeader(header, version)
-                val rest = result.drop(version2dDoc.headerLength).split("US")
+                val rest = result.drop(version2dDoc.headerLength).split(31.toChar()) // ASCII 31 - <US> separator
                 val data = rest[0]
                 println("data: $data")
                 val signature = when(rest.size) {

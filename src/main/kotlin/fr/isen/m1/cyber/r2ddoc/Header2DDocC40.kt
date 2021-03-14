@@ -7,8 +7,7 @@ data class Header2DDocC40(
     val certificateId: String,
     val emissionDocumentDate: String, //TODO change type to date or create getter
     val signatureCreationDate: String, //TODO change type to date or create getter
-    val documentTypeId: String,
-    val emitterCountry: String?
+    val documentTypeId: String, // Périmètre C40 ‘01’
 ) {
 
 }

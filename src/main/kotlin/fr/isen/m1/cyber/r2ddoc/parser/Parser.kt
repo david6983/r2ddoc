@@ -18,17 +18,14 @@ class Parser() {
         decodedQrCode.substring(2, 4).let { version ->
             Version2DDoc.isSupportedVersion(version)?.let { version2dDoc ->
                 val header = decodedQrCode.take(version2dDoc.headerLength)
-                println("header: $header")
                 parseHeader(header, version)?.let { parsedHeader ->
                     val rest = decodedQrCode.drop(version2dDoc.headerLength).split(ASCII_UNIT_SEPARATOR.toChar())
                     val data = rest[0]
-                    println("data: $data")
                     val parsedData = parseData(data)
                     val signature = when(rest.size) {
                         2 -> decodeSignature(rest[1])
                         else -> ""
                     }
-                    println("signature: $signature")
                     return Parsed2DDoc(
                         parsedHeader,
                         parsedData,

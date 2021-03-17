@@ -1,4 +1,4 @@
-package fr.isen.m1.cyber.r2ddoc
+package fr.isen.m1.cyber.r2ddoc.parser
 
 enum class Abbreviations(
     val word: String,

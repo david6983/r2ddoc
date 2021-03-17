@@ -7,8 +7,9 @@ import fr.isen.m1.cyber.r2ddoc.parser.enums.DataValueIso20022
 import fr.isen.m1.cyber.r2ddoc.parser.enums.Parsed2DDoc
 import fr.isen.m1.cyber.r2ddoc.parser.enums.Version2DDoc
 import org.apache.commons.codec.binary.Base32
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
+import java.text.SimpleDateFormat
+import java.util.*
+import kotlin.collections.ArrayList
 
 const val ASCII_GROUP_SEPARATOR = 29
 const val ASCII_UNIT_SEPARATOR = 31
@@ -102,8 +103,13 @@ class Parser() {
 
     fun parseDate(value: String): String {
         val numberOfDays = value.toLong(16)
-        val date = LocalDate.of(2000, 1, 1).plusDays(numberOfDays)
-        val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
-        return date.format(formatter)
+        val date = "01/01/2000"
+        val formatter = SimpleDateFormat("dd/MM/yyyy", Locale.FRANCE)
+        val calendar = Calendar.getInstance()
+        formatter.parse(date)?.let {
+            calendar.time = it
+            calendar.add(Calendar.DATE, numberOfDays.toInt())
+        }
+        return formatter.format(calendar.time)
     }
 }

@@ -17,6 +17,8 @@ dependencies {
     implementation group: 'com.google.zxing', name: 'core', version: '3.4.1'
     implementation group: 'com.google.zxing', name: 'javase', version: '3.4.1'
     implementation group: 'commons-codec', name: 'commons-codec', version: '1.15'
+    implementation("com.github.ajalt.mordant:mordant:2.0.0-alpha2")
+    implementation("com.github.ajalt.clikt:clikt:3.1.0")
 }
 
 test {

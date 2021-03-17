@@ -7,6 +7,11 @@ import fr.isen.m1.cyber.r2ddoc.parser.enums.DataValueIso20022
 import fr.isen.m1.cyber.r2ddoc.parser.enums.Parsed2DDoc
 import fr.isen.m1.cyber.r2ddoc.parser.enums.Version2DDoc
 import org.apache.commons.codec.binary.Base32
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+
+const val ASCII_GROUP_SEPARATOR = 29
+const val ASCII_UNIT_SEPARATOR = 31
 
 class Parser() {
     fun parse(decodedQrCode: String): Parsed2DDoc? {
@@ -14,7 +19,7 @@ class Parser() {
             Version2DDoc.isSupportedVersion(version)?.let { version2dDoc ->
                 val header = decodedQrCode.take(version2dDoc.headerLength)
                 parseHeader(header, version)?.let { parsedHeader ->
-                    val rest = decodedQrCode.drop(version2dDoc.headerLength).split(31.toChar()) // ASCII 31 - <US> Unit Separator
+                    val rest = decodedQrCode.drop(version2dDoc.headerLength).split(ASCII_UNIT_SEPARATOR.toChar())
                     val data = rest[0]
                     val parsedData = parseData(data)
                     var hexSignature = ""
@@ -45,8 +50,8 @@ class Parser() {
                 version,
                 header.substring(4, 8),
                 header.substring(8, 12),
-                header.substring(12, 16),
-                header.substring(16, 20),
+                parseDate(header.substring(12, 16)),
+                parseDate(header.substring(16, 20)),
                 header.substring(20, 22)
             )
         } else {
@@ -78,7 +83,7 @@ class Parser() {
         var next = ""
         DataValueIso20022.getValue(id)?.let {
             val value = when {
-                it.maxSize != it.minSize -> data.removePrefix(id).substringBefore(29.toChar()) // ASCII 29 <GS>
+                it.maxSize != it.minSize -> data.removePrefix(id).substringBefore(ASCII_GROUP_SEPARATOR.toChar())
                 it.minSize == it.maxSize -> data.removePrefix(id).substring(0, it.maxSize)
                 else -> ""
             }
@@ -89,5 +94,12 @@ class Parser() {
             parsedData += parseData(next)
         }
         return parsedData
+    }
+
+    private fun parseDate(value: String): String {
+        val numberOfDays = value.toLong(16)
+        val date = LocalDate.of(2000, 1, 1).plusDays(numberOfDays)
+        val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")
+        return date.format(formatter)
     }
 }

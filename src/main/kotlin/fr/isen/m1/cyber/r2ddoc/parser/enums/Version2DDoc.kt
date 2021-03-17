@@ -1,4 +1,4 @@
-package fr.isen.m1.cyber.r2ddoc.parser
+package fr.isen.m1.cyber.r2ddoc.parser.enums
 
 enum class Version2DDoc(val headerLength: Int, val version: String) {
     V01(22, "01"),

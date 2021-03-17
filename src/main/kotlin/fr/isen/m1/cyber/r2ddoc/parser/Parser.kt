@@ -1,5 +1,11 @@
 package fr.isen.m1.cyber.r2ddoc.parser
 
+import fr.isen.m1.cyber.r2ddoc.parser.domain.Data2DDoc
+import fr.isen.m1.cyber.r2ddoc.parser.domain.Header2DDocC40
+import fr.isen.m1.cyber.r2ddoc.parser.enums.Abbreviations
+import fr.isen.m1.cyber.r2ddoc.parser.enums.DataValueIso20022
+import fr.isen.m1.cyber.r2ddoc.parser.enums.Parsed2DDoc
+import fr.isen.m1.cyber.r2ddoc.parser.enums.Version2DDoc
 import org.apache.commons.codec.binary.Base32
 
 class Parser() {

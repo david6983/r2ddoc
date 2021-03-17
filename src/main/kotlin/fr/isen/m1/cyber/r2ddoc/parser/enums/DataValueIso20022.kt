@@ -1,4 +1,4 @@
-package fr.isen.m1.cyber.r2ddoc.parser
+package fr.isen.m1.cyber.r2ddoc.parser.enums
 
 // -1 for max size means none
 enum class DataValueIso20022(

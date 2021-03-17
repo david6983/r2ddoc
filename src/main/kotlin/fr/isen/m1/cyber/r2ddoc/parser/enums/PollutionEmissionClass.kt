@@ -1,4 +1,4 @@
-package fr.isen.m1.cyber.r2ddoc.parser
+package fr.isen.m1.cyber.r2ddoc.parser.enums
 
 enum class PollutionEmissionClass(
     val encoding: String,

@@ -17,6 +17,7 @@ class CliMain : CliktCommand() {
         try {
             decodeQRCode(image)?.let {
                 val parser = Parser()
+                println("Message: $it")
                 parser.parse(it)?.let { result ->
                    result.display(terminal)
                 }

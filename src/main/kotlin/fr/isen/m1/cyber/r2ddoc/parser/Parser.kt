@@ -18,23 +18,21 @@ class Parser() {
         decodedQrCode.substring(2, 4).let { version ->
             Version2DDoc.isSupportedVersion(version)?.let { version2dDoc ->
                 val header = decodedQrCode.take(version2dDoc.headerLength)
+                println("header: $header")
                 parseHeader(header, version)?.let { parsedHeader ->
                     val rest = decodedQrCode.drop(version2dDoc.headerLength).split(ASCII_UNIT_SEPARATOR.toChar())
                     val data = rest[0]
+                    println("data: $data")
                     val parsedData = parseData(data)
-                    var hexSignature = ""
                     val signature = when(rest.size) {
-                        2 -> rest[1]
+                        2 -> decodeSignature(rest[1])
                         else -> ""
                     }
-                    if (signature != "") {
-                        val decodedSignature = Base32().decode(signature)
-                        hexSignature = decodedSignature.joinToString("") { String.format("%02x", it) }
-                    }
+                    println("signature: $signature")
                     return Parsed2DDoc(
                         parsedHeader,
                         parsedData,
-                        hexSignature
+                        signature
                     )
                 }
             }
@@ -42,7 +40,16 @@ class Parser() {
         return null
     }
 
-    private fun parseHeader(header: String, version: String) : Header2DDocC40? {
+    fun decodeSignature(value: String): String {
+        return if (value != "") {
+            val decodedSignature = Base32().decode(value)
+            decodedSignature.joinToString("") { String.format("%02x", it) }
+        } else {
+            ""
+        }
+    }
+
+    fun parseHeader(header: String, version: String) : Header2DDocC40? {
         val versionSupported = Version2DDoc.isSupportedVersion(version)
         return if (header.length == versionSupported?.headerLength) {
             Header2DDocC40(
@@ -59,7 +66,7 @@ class Parser() {
         }
     }
 
-    private fun parseAbbreviation(value: String): String {
+    fun parseAbbreviation(value: String): String {
         return if (value.contains('/')) {
             var final = ""
             val split = value.split('/')
@@ -77,7 +84,7 @@ class Parser() {
         }
     }
 
-    private fun parseData(data: String): ArrayList<Data2DDoc> {
+    fun parseData(data: String): ArrayList<Data2DDoc> {
         val parsedData = arrayListOf<Data2DDoc>()
         val id = data.substring(0, 2)
         var next = ""
@@ -96,7 +103,7 @@ class Parser() {
         return parsedData
     }
 
-    private fun parseDate(value: String): String {
+    fun parseDate(value: String): String {
         val numberOfDays = value.toLong(16)
         val date = LocalDate.of(2000, 1, 1).plusDays(numberOfDays)
         val formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy")

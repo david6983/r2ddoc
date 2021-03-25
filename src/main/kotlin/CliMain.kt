@@ -34,13 +34,13 @@ class CliMain : CliktCommand() {
         terminal.println(table {
             header { row("Label", "Value") }
             body {
-                row("identification marker", parsedCode.header.identificationMarker)
+                row("marqueur d'identification", parsedCode.header.identificationMarker)
                 row("version", parsedCode.header.version)
-                row("authority certification id", parsedCode.header.authorityCertificationId)
-                row("certificate id", parsedCode.header.certificateId)
-                row("emission document date", parsedCode.header.emissionDocumentDate.toString())
-                row("signature creationDate", parsedCode.header.signatureCreationDate.toString())
-                row("document type id", parsedCode.header.documentTypeId)
+                row("id de l'authorité de certification", parsedCode.header.authorityCertificationId)
+                row("id du certificat", parsedCode.header.certificateId)
+                row("date d'emission du document", parsedCode.header.emissionDocumentDate.toString())
+                row("date de création de la signature", parsedCode.header.signatureCreationDate.toString())
+                row("id du type de document", parsedCode.header.documentTypeId)
             }
         })
         terminal.println("Data")

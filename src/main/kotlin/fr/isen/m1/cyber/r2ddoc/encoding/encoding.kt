@@ -1,3 +1,5 @@
+package fr.isen.m1.cyber.r2ddoc.encoding
+
 import com.google.zxing.*
 import com.google.zxing.client.j2se.BufferedImageLuminanceSource
 import com.google.zxing.common.HybridBinarizer
@@ -44,18 +46,4 @@ fun encodeSignatureToDerAsn1(signature: ByteArray): ByteArray? {
         throw RuntimeException("Failed to generate ASN.1 DER signature", e)
     }
     return bos.toByteArray()
-}
-
-fun verify2dDoc(cert: X509Certificate, parsed2DDoc: Parsed2DDoc): Boolean {
-    val signatureAlgorithm = if (cert.publicKey.algorithm == "EC") {
-        "SHA256withECDSA"
-    } else {
-        "SHA256withRSA"
-    }
-    val signature: Signature = Signature.getInstance(signatureAlgorithm)
-    signature.initVerify(cert.publicKey)
-    val payload = parsed2DDoc.rawHeader + parsed2DDoc.rawData
-    signature.update(payload.toByteArray())
-    val derSignature = encodeSignatureToDerAsn1(Hex.decode(parsed2DDoc.signature))
-    return signature.verify(derSignature)
 }

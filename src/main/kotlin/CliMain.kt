@@ -7,17 +7,33 @@ import com.google.zxing.NotFoundException
 import fr.isen.m1.cyber.r2ddoc.encoding.decodeQRCode
 import fr.isen.m1.cyber.r2ddoc.parser.Parser
 import fr.isen.m1.cyber.r2ddoc.parser.domain.Parsed2DDoc
+import fr.isen.m1.cyber.r2ddoc.validation.listCrl
 import fr.isen.m1.cyber.r2ddoc.validation.verify2dDoc
 import fr.isen.m1.cyber.r2ddoc.validation.verifyCertificate
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.io.IOException
-import java.security.InvalidKeyException
-import java.security.NoSuchAlgorithmException
-import java.security.NoSuchProviderException
-import java.security.SignatureException
-import java.security.cert.CertificateException
+import org.bouncycastle.asn1.DERIA5String
+
+import java.util.ArrayList
+
+import org.bouncycastle.asn1.ASN1Primitive
+
+import java.io.ByteArrayInputStream
+
+import org.bouncycastle.asn1.ASN1InputStream
+
+import org.bouncycastle.asn1.DEROctetString
+import org.bouncycastle.asn1.isismtt.ocsp.RequestedCertificate
+
+import org.bouncycastle.asn1.isismtt.ocsp.RequestedCertificate.certificate
+import org.bouncycastle.asn1.x509.*
+import org.bouncycastle.asn1.x509.Extension
+
+import java.net.MalformedURLException
+import java.security.cert.*
+
 
 const val FR00_CERTIFICATE = """
 -----BEGIN CERTIFICATE-----
@@ -61,7 +77,14 @@ class CliMain : CliktCommand() {
                             204 -> println("The certificate ${result.header.certificateId} was not found (204 No content): Unable to verify !")
                             200 -> {
                                 val cert = parser.parseX509Certificate(res.body!!.bytes())
-                                val caCert = parser.parseX509Certificate(FR00_CERTIFICATE.toByteArray())
+                                var isRevoked = true
+                                getCrlFromUrl(cert).forEach { crl ->
+                                    isRevoked = crl.isRevoked(cert)
+                                }
+                                println("is revoked: $isRevoked")
+
+                                val caCert = parser.parseX509Certificate(FR03_CA_CERTIFICATE.toByteArray())
+
                                 val isCertValid = verifyCertificate(cert, caCert.publicKey)
                                 if (isCertValid) {
                                     val isValid = verify2dDoc(cert, result)
@@ -83,6 +106,21 @@ class CliMain : CliktCommand() {
         } catch (e: NotFoundException) {
             println("not found: $e")
         }
+    }
+
+    private fun getCrlFromUrl(cert: X509Certificate): ArrayList<CRL> {
+        val cf = CertificateFactory.getInstance("X.509")
+        val crlList = arrayListOf<CRL>()
+        listCrl(cert).forEach { crlUrl ->
+            performGetHttpRequest(crlUrl).use { crlRes ->
+                when (crlRes.code) {
+                    200 -> {
+                        crlList.add(cf.generateCRL(crlRes.body!!.byteStream()))
+                    }
+                }
+            }
+        }
+        return crlList
     }
 
     // working for FR03 only so far

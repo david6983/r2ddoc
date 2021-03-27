@@ -8,6 +8,7 @@ import fr.isen.m1.cyber.r2ddoc.parser.Parser
 import fr.isen.m1.cyber.r2ddoc.parser.domain.Parsed2DDoc
 import okhttp3.OkHttpClient
 import okhttp3.Request
+import okhttp3.Response
 import java.io.IOException
 
 const val FR00_CERTIFICATE = """
@@ -40,13 +41,20 @@ class CliMain : CliktCommand() {
     override fun run() {
         try {
             decodeQRCode(image)?.let {
-                parser.parse(it)?.let { parsed2dDoc ->
-                    display(terminal, parsed2dDoc)
-                    // working for FR03 only so far
-                    val body = performGetHttpRequest(FR03_URL + parsed2dDoc.header.certificateId)
-                    val cert = parser.parseX509Certificate(body)
-                    val isValid = verify2dDoc(cert, parsed2dDoc)
-                    println("is valid: $isValid")
+                parser.parse(it)?.let { result ->
+                   display(terminal, result)
+                    performGetHttpRequest(FR03_URL + result.header.certificateId).use { res ->
+                        when (res.code) {
+                            204 -> println("The certificate ${result.header.certificateId} was not found (204 No content): Unable to verify !")
+                            200 -> {
+                                val cert = parser.parseX509Certificate(res.body!!.bytes())
+                                val isValid = verify2dDoc(cert, result)
+                                println("is valid: $isValid")
+                            }
+                        }
+                    }
+                } ?:run {
+                    println("The given qr code is not supported ! (version 03 not handled)")
                 }
 
             }
@@ -58,14 +66,13 @@ class CliMain : CliktCommand() {
         }
     }
 
-    private fun performGetHttpRequest(url: String): ByteArray {
+    // working for FR03 only so far
+    private fun performGetHttpRequest(url: String): Response {
         val request = Request.Builder()
             .url(url)
             .build()
-        client.newCall(request).execute().use { response ->
-            if (!response.isSuccessful) throw IOException("Unexpected code $response")
-            return response.body!!.bytes()
-        }
+
+        return client.newCall(request).execute()
     }
 
     private fun display(terminal: Terminal, parsedCode: Parsed2DDoc) {

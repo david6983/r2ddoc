@@ -1,6 +1,5 @@
 package fr.isen.m1.cyber.r2ddoc.parser
 
-import fr.isen.m1.cyber.r2ddoc.parser.enums.Parsed2DDoc
 import org.junit.jupiter.api.Assertions
 import org.junit.jupiter.api.Test
 

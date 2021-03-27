@@ -9,15 +9,6 @@ import fr.isen.m1.cyber.r2ddoc.parser.domain.Parsed2DDoc
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import java.io.IOException
-import org.bouncycastle.util.encoders.Hex
-import java.security.Signature
-import org.bouncycastle.asn1.ASN1Integer
-
-import org.bouncycastle.asn1.DERSequenceGenerator
-
-import java.io.ByteArrayOutputStream
-import java.math.BigInteger
-import java.security.cert.X509Certificate
 
 const val FR00_CERTIFICATE = """
 -----BEGIN CERTIFICATE-----
@@ -49,10 +40,12 @@ class CliMain : CliktCommand() {
     override fun run() {
         try {
             decodeQRCode(image)?.let {
-                parser.parse(it)?.let { result ->
-                   display(terminal, result)
-                    val cert = downloadCertificate(FR03_URL + result.header.certificateId)
-                    val isValid = verify2dDoc(cert, result)
+                parser.parse(it)?.let { parsed2dDoc ->
+                    display(terminal, parsed2dDoc)
+                    // working for FR03 only so far
+                    val body = performGetHttpRequest(FR03_URL + parsed2dDoc.header.certificateId)
+                    val cert = parser.parseX509Certificate(body)
+                    val isValid = verify2dDoc(cert, parsed2dDoc)
                     println("is valid: $isValid")
                 }
 
@@ -65,31 +58,14 @@ class CliMain : CliktCommand() {
         }
     }
 
-    // working for FR03 only so far
-    private fun downloadCertificate(url: String): X509Certificate {
+    private fun performGetHttpRequest(url: String): ByteArray {
         val request = Request.Builder()
             .url(url)
             .build()
-
         client.newCall(request).execute().use { response ->
             if (!response.isSuccessful) throw IOException("Unexpected code $response")
-            val body = response.body!!.bytes()
-            return parser.parseX509Certificate(body)
+            return response.body!!.bytes()
         }
-    }
-
-    private fun verify2dDoc(cert: X509Certificate, parsed2DDoc: Parsed2DDoc): Boolean {
-        val signatureAlgorithm = if (cert.publicKey.algorithm == "EC") {
-            "SHA256withECDSA"
-        } else {
-            "SHA256withRSA"
-        }
-        val signature: Signature = Signature.getInstance(signatureAlgorithm)
-        signature.initVerify(cert.publicKey)
-        val payload = parsed2DDoc.rawHeader + parsed2DDoc.rawData
-        signature.update(payload.toByteArray())
-        val derSignature = encodeSignatureToDerAsn1(Hex.decode(parsed2DDoc.signature))
-        return signature.verify(derSignature)
     }
 
     private fun display(terminal: Terminal, parsedCode: Parsed2DDoc) {

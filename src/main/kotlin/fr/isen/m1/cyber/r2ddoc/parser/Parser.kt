@@ -73,6 +73,19 @@ class Parser() {
                             null
                         )
                     }
+                    Version2DDoc.V03 -> {
+                        Header2DDocC40(
+                            header.take(2),
+                            version,
+                            header.substring(4, 8),
+                            header.substring(8, 12),
+                            parseDate(header.substring(12, 16)),
+                            parseDate(header.substring(16, 20)),
+                            header.substring(20, 22),
+                            header.substring(22, 24),
+                            null
+                        )
+                    }
                     Version2DDoc.V04 -> {
                         Header2DDocC40(
                             header.take(2),

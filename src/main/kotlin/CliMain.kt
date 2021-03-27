@@ -1,6 +1,7 @@
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.mordant.rendering.OverflowWrap
+import com.github.ajalt.mordant.rendering.TextColors
 import com.github.ajalt.mordant.table.table
 import com.github.ajalt.mordant.terminal.Terminal
 import com.google.zxing.NotFoundException
@@ -14,26 +15,8 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import java.io.IOException
-import org.bouncycastle.asn1.DERIA5String
-
 import java.util.ArrayList
-
-import org.bouncycastle.asn1.ASN1Primitive
-
-import java.io.ByteArrayInputStream
-
-import org.bouncycastle.asn1.ASN1InputStream
-
-import org.bouncycastle.asn1.DEROctetString
-import org.bouncycastle.asn1.isismtt.ocsp.RequestedCertificate
-
-import org.bouncycastle.asn1.isismtt.ocsp.RequestedCertificate.certificate
-import org.bouncycastle.asn1.x509.*
-import org.bouncycastle.asn1.x509.Extension
-
-import java.net.MalformedURLException
 import java.security.cert.*
-
 
 const val FR00_CERTIFICATE = """
 -----BEGIN CERTIFICATE-----
@@ -71,40 +54,59 @@ class CliMain : CliktCommand() {
         try {
             decodeQRCode(image)?.let {
                 parser.parse(it)?.let { result ->
-                   display(terminal, result)
-                    performGetHttpRequest(FR03_URL + result.header.certificateId).use { res ->
-                        when (res.code) {
-                            204 -> println("The certificate ${result.header.certificateId} was not found (204 No content): Unable to verify !")
-                            200 -> {
-                                val cert = parser.parseX509Certificate(res.body!!.bytes())
-                                var isRevoked = true
-                                getCrlFromUrl(cert).forEach { crl ->
-                                    isRevoked = crl.isRevoked(cert)
-                                }
-                                println("is revoked: $isRevoked")
-
-                                val caCert = parser.parseX509Certificate(FR03_CA_CERTIFICATE.toByteArray())
-
-                                val isCertValid = verifyCertificate(cert, caCert.publicKey)
-                                if (isCertValid) {
-                                    val isValid = verify2dDoc(cert, result)
-                                    println("is valid: $isValid")
-                                } else {
-                                    println("cannot verify qr code because the certificate of the participant is not valid !")
+                    when (result.header.authorityCertificationId) {
+                        "FR00" -> {
+                            val cert = parser.parseX509Certificate(FR00_CERTIFICATE.toByteArray())
+                            val isValid = verify2dDoc(cert, result)
+                            if (isValid) {
+                                terminal.println(TextColors.yellow("The qr code is valid but this is a Testing code only !"))
+                                display(terminal, result)
+                            } else {
+                                terminal.println(TextColors.red("The testing qr code is not valid !"))
+                            }
+                        }
+                        else -> {
+                            performGetHttpRequest(FR03_URL + result.header.certificateId).use { res ->
+                                when (res.code) {
+                                    204 -> terminal.println(TextColors.red(("The participant \"${result.header.certificateId}\" was not found (204 No content): Unable to verify !")))
+                                    200 -> {
+                                        val cert = parser.parseX509Certificate(res.body!!.bytes())
+                                        var isRevoked = true
+                                        getCrlFromUrl(cert).forEach { crl ->
+                                            isRevoked = crl.isRevoked(cert)
+                                        }
+                                        if (isRevoked) {
+                                            terminal.println(TextColors.red("The certificate of the participant is revoked !"))
+                                        } else {
+                                            terminal.println(TextColors.green("The certificate of the participant is not revoked."))
+                                            val caCert = parser.parseX509Certificate(FR03_CA_CERTIFICATE.toByteArray())
+                                            val isCertValid = verifyCertificate(cert, caCert.publicKey)
+                                            if (isCertValid) {
+                                                val isValid = verify2dDoc(cert, result)
+                                                if (isValid) {
+                                                    terminal.println(TextColors.green("The qr code is valid !"))
+                                                    display(terminal, result)
+                                                } else {
+                                                    terminal.println(TextColors.red("The qr code is not valid !"))
+                                                }
+                                            } else {
+                                                terminal.println(TextColors.red("cannot verify qr code because the certificate of the participant is not valid !"))
+                                            }
+                                        }
+                                    }
                                 }
                             }
                         }
                     }
                 } ?:run {
-                    println("The given qr code is not supported ! (version 03 not handled)")
+                    terminal.println(TextColors.red("The given qr code is not supported ! (version 03 not handled)"))
                 }
-
             }
 
         } catch (e: IOException) {
-            println(e)
+            terminal.println(TextColors.red("The input file is not valid !"))
         } catch (e: NotFoundException) {
-            println("not found: $e")
+            terminal.println(TextColors.red("2ddoc code not found !"))
         }
     }
 

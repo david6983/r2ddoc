@@ -17,6 +17,14 @@ import okhttp3.Response
 import java.io.IOException
 import java.util.ArrayList
 import java.security.cert.*
+import org.bouncycastle.asn1.ASN1Primitive
+
+import org.bouncycastle.asn1.ASN1InputStream
+
+import java.io.ByteArrayInputStream
+
+
+
 
 const val FR00_CERTIFICATE = """
 -----BEGIN CERTIFICATE-----
@@ -51,6 +59,10 @@ class CliMain : CliktCommand() {
     private val parser = Parser()
 
     override fun run() {
+        //performGetHttpRequest("http://cert.pki-2ddoc.ariadnext.fr/pki-2ddoc.der").use { res ->
+
+        //}
+
         try {
             decodeQRCode(image)?.let {
                 parser.parse(it)?.let { result ->

@@ -17,14 +17,6 @@ import okhttp3.Response
 import java.io.IOException
 import java.util.ArrayList
 import java.security.cert.*
-import org.bouncycastle.asn1.ASN1Primitive
-
-import org.bouncycastle.asn1.ASN1InputStream
-
-import java.io.ByteArrayInputStream
-
-
-
 
 const val FR00_CERTIFICATE = """
 -----BEGIN CERTIFICATE-----

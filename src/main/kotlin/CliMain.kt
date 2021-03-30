@@ -1,29 +1,17 @@
 import com.github.ajalt.clikt.core.CliktCommand
 import com.github.ajalt.clikt.parameters.arguments.argument
 import com.github.ajalt.mordant.rendering.OverflowWrap
-import com.github.ajalt.mordant.rendering.TextColors
 import com.github.ajalt.mordant.table.table
 import com.github.ajalt.mordant.terminal.Terminal
-import com.google.zxing.NotFoundException
-import fr.isen.m1.cyber.r2ddoc.encoding.decodeQRCode
 import fr.isen.m1.cyber.r2ddoc.parser.Parser
 import fr.isen.m1.cyber.r2ddoc.parser.domain.Parsed2DDoc
+import fr.isen.m1.cyber.r2ddoc.parser.parseXml
 import fr.isen.m1.cyber.r2ddoc.validation.listCrl
-import fr.isen.m1.cyber.r2ddoc.validation.verify2dDoc
-import fr.isen.m1.cyber.r2ddoc.validation.verifyCertificate
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
-import java.io.IOException
 import java.util.ArrayList
 import java.security.cert.*
-import org.bouncycastle.asn1.ASN1Primitive
-
-import org.bouncycastle.asn1.ASN1InputStream
-
-import java.io.ByteArrayInputStream
-
-
 
 
 const val FR00_CERTIFICATE = """
@@ -61,7 +49,9 @@ class CliMain : CliktCommand() {
 
     override fun run() {
         performGetHttpRequest(TSL_URL).use { res ->
-            println(res.body!!.string())
+            val uglyXml = res.body!!.string()
+            val parsedXml = parseXml(uglyXml)
+            println(parsedXml)
         }
         /*
         try {

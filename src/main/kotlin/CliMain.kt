@@ -44,6 +44,7 @@ MIIGozCCBIugAwIBAgIRAIicQfC+tDE/Mw+eLtuCcewwDQYJKoZIhvcNAQELBQAwWjELMAkGA1UEBhMC
 
 //extract from XML ?
 const val FR03_URL = "http://certificates.certigna.fr/search.php?name="
+const val TSL_URL = "https://ants.gouv.fr/content/download/517/5670/version/19/file/ANTS_2D-DOc_TSL_230713_v3_signed.xml"
 
 class CliMain : CliktCommand() {
     private val image: String by argument(help="Path to the 2d-doc qr code (png format)")
@@ -51,10 +52,10 @@ class CliMain : CliktCommand() {
     private val parser = Parser()
 
     override fun run() {
-        //performGetHttpRequest("http://cert.pki-2ddoc.ariadnext.fr/pki-2ddoc.der").use { res ->
-
-        //}
-
+        performGetHttpRequest(TSL_URL).use { res ->
+            println(res.body!!.string())
+        }
+        /*
         try {
             decodeQRCode(image)?.let {
                 parser.parse(it)?.let { result ->
@@ -111,7 +112,7 @@ class CliMain : CliktCommand() {
             terminal.println(TextColors.red("The input file is not valid !"))
         } catch (e: NotFoundException) {
             terminal.println(TextColors.red("2ddoc code not found !"))
-        }
+        }*/
     }
 
     private fun getCrlFromUrl(cert: X509Certificate): ArrayList<CRL> {

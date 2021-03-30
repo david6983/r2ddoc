@@ -1,5 +1,6 @@
 package fr.isen.m1.cyber.r2ddoc.parser.domain
 
+import java.io.Serializable
 import java.util.*
 
 data class Parsed2DDoc(
@@ -9,4 +10,4 @@ data class Parsed2DDoc(
     val rawHeader: String,
     val rawData: String,
     val rawSignature: String
-)
+) : Serializable

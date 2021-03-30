@@ -1,5 +1,7 @@
 package fr.isen.m1.cyber.r2ddoc.parser.domain
 
+import java.io.Serializable
+
 data class Header2DDocC40(
     val identificationMarker: String,
     val version: String,
@@ -11,4 +13,4 @@ data class Header2DDocC40(
     val perimeterId: String?, // V04
     val emitterCountry: String?, // V04
 
-)
+) : Serializable

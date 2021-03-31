@@ -48,7 +48,6 @@ MIIGozCCBIugAwIBAgIRAIicQfC+tDE/Mw+eLtuCcewwDQYJKoZIhvcNAQELBQAwWjELMAkGA1UEBhMC
 """
 
 //extract from XML ?
-const val FR03_URL = "http://certificates.certigna.fr/search.php?name="
 const val TSL_URL = "https://ants.gouv.fr/content/download/517/5670/version/19/file/ANTS_2D-DOc_TSL_230713_v3_signed.xml"
 
 class CliMain : CliktCommand() {
@@ -69,7 +68,7 @@ class CliMain : CliktCommand() {
                 }
                 if (!isTslCaRevoked) {
                     val isXmlValid = isXmlValid(tslDoc, tslCaCert.publicKey)
-                    if (!isXmlValid) {
+                    if (isXmlValid) {
                         tslData = tslXml
                     } else {
                         terminal.println(TextColors.red("The TSL signature is not valid !"))
@@ -82,7 +81,6 @@ class CliMain : CliktCommand() {
             }
         }
         if (tslData != null) {
-            //TODO call url according to tslData
             try {
                 decodeQRCode(image)?.let {
                     parser.parse(it)?.let { result ->
@@ -98,35 +96,41 @@ class CliMain : CliktCommand() {
                                 }
                             }
                             else -> {
-                                performGetHttpRequest(FR03_URL + result.header.certificateId).use { res ->
-                                    when (res.code) {
-                                        204 -> terminal.println(TextColors.red(("The participant \"${result.header.certificateId}\" was not found (204 No content): Unable to verify !")))
-                                        200 -> {
-                                            val cert = parser.parseX509Certificate(res.body!!.bytes())
-                                            var isRevoked = true
-                                            getCrlFromUrl(cert).forEach { crl ->
-                                                isRevoked = crl.isRevoked(cert)
-                                            }
-                                            if (isRevoked) {
-                                                terminal.println(TextColors.red("The certificate of the participant is revoked !"))
-                                            } else {
-                                                terminal.println(TextColors.green("The certificate of the participant is not revoked."))
-                                                val caCert = parser.parseX509Certificate(FR03_CA_CERTIFICATE.toByteArray())
-                                                val isCertValid = verifyCertificate(cert, caCert.publicKey)
-                                                if (isCertValid) {
-                                                    val isValid = verify2dDoc(cert, result)
-                                                    if (isValid) {
-                                                        terminal.println(TextColors.green("The qr code is valid !"))
-                                                        display(terminal, result)
-                                                    } else {
-                                                        terminal.println(TextColors.red("The qr code is not valid !"))
-                                                    }
+                                val participant= tslData!!.findProviderById(result.header.authorityCertificationId)
+                                if (participant != null) {
+                                    val trimmedUri = participant.uri.split("?")[0]
+                                    performGetHttpRequest("$trimmedUri?name=${result.header.certificateId}").use { res ->
+                                        when (res.code) {
+                                            204 -> terminal.println(TextColors.red(("The participant \"${result.header.certificateId}\" was not found (204 No content): Unable to verify !")))
+                                            200 -> {
+                                                val cert = parser.parseX509Certificate(res.body!!.bytes())
+                                                var isRevoked = true
+                                                getCrlFromUrl(cert).forEach { crl ->
+                                                    isRevoked = crl.isRevoked(cert)
+                                                }
+                                                if (isRevoked) {
+                                                    terminal.println(TextColors.red("The certificate of the participant is revoked !"))
                                                 } else {
-                                                    terminal.println(TextColors.red("cannot verify qr code because the certificate of the participant is not valid !"))
+                                                    terminal.println(TextColors.green("The certificate of the participant is not revoked."))
+                                                    val caCert = parser.parseX509Certificate(participant.certificate.toByteArray())
+                                                    val isCertValid = verifyCertificate(cert, caCert.publicKey)
+                                                    if (isCertValid) {
+                                                        val isValid = verify2dDoc(cert, result)
+                                                        if (isValid) {
+                                                            terminal.println(TextColors.green("The qr code is valid !"))
+                                                            display(terminal, result)
+                                                        } else {
+                                                            terminal.println(TextColors.red("The qr code is not valid !"))
+                                                        }
+                                                    } else {
+                                                        terminal.println(TextColors.red("cannot verify qr code because the certificate of the participant is not valid !"))
+                                                    }
                                                 }
                                             }
                                         }
                                     }
+                                } else {
+                                    terminal.println(TextColors.red("Cannot find the the participant in the trusted list !"))
                                 }
                             }
                         }
@@ -141,7 +145,6 @@ class CliMain : CliktCommand() {
                 terminal.println(TextColors.red("2ddoc code not found !"))
             }
         }
-
     }
 
     private fun getCrlFromUrl(cert: X509Certificate): ArrayList<CRL> {
@@ -161,16 +164,10 @@ class CliMain : CliktCommand() {
 
     // working for FR03 only so far
     private fun performGetHttpRequest(url: String): Response {
-        val client = OkHttpClient() //.Builder()
-            //.certificatePinner(
-            //    CertificatePinner.Builder()
-            //        .add("certificates.certigna.fr", "sha256/$FR03_CA_CERTIFICATE")
-            //        .build())
-            //.build()
+        val client = OkHttpClient()
         val request = Request.Builder()
             .url(url)
             .build()
-
         return client.newCall(request).execute()
     }
 

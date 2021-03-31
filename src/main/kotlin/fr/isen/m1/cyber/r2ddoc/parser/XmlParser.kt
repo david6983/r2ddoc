@@ -47,13 +47,16 @@ fun parseXml(xmlDoc: Document): TrustServiceList {
     val parsedData = TrustServiceList(arrayListOf(), "")
     val uris: NodeList = xmlDoc.getElementsByTagName("tsl:TSPInformationURI")
     val ids: NodeList = xmlDoc.getElementsByTagName("tsl:TSPTradeName")
+    val certificates: NodeList = xmlDoc.getElementsByTagName("tsl:X509Certificate")
+    parsedData.caCertificate = "-----BEGIN CERTIFICATE-----\n${xmlDoc.getElementsByTagName("ds:X509Certificate").item(0).textContent}\n-----END CERTIFICATE-----"
     for (i in 0 until uris.length) {
         parsedData.tspList.add(
             TrustServiceProvider(
             ids.item(i).childNodes.item(1).textContent,
-            uris.item(i).childNodes.item(1).textContent
-        )
-        )
+            uris.item(i).childNodes.item(1).textContent,
+    "-----BEGIN CERTIFICATE-----\n${certificates.item(i).childNodes.item(0).textContent}\n" +
+                    "-----END CERTIFICATE-----"
+        ))
     }
     return parsedData
 }
